@@ -34,7 +34,6 @@ void *periodic_task(void *arg) {
     memset(&attrs, 0, sizeof(attrs));
     attrs.sched_policy = SCHED_RR;  // Use Round Robin scheduling
     attrs.sched_priority = 5;  // Lower priority for fairness
-    attrs.sched_rr_quantum = 2000000;  // 2ms time slice (quantum)
 
     int ret = evl_attach_thread(EVL_CLONE_PUBLIC, thread_name.c_str(), &attrs);
     if (ret < 0) {
