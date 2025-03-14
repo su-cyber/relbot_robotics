@@ -36,7 +36,7 @@ void *periodic_task(void *arg) {
     // Attach thread to EVL with FIFO scheduling
     struct evl_sched_attrs attrs;
     memset(&attrs, 0, sizeof(attrs));
-    attrs.sched_policy = SCHED_FIFO;  // **Use FIFO instead of Round Robin**
+    attrs.sched_policy = SCHED_FIFO;  // Use FIFO instead of Round Robin
     attrs.sched_priority = 10;  // Higher priority to prevent delays
 
     int ret = evl_attach_thread(EVL_CLONE_PUBLIC, thread_name.c_str(), &attrs);
@@ -70,6 +70,18 @@ void *periodic_task(void *arg) {
 
     if (DEBUG) std::cout << "[DEBUG] Thread " << thread_id << " starting periodic loop.\n";
 
+    // Open CSV file for logging (append mode)
+    std::ofstream log("execution_times.csv", std::ios::app);
+    if (!log.is_open()) {
+        std::cerr << "[ERROR] Could not open execution_times.csv for writing\n";
+        return NULL;
+    }
+
+    // First thread writes the CSV header (ensure only once)
+    if (thread_id == 0) {
+        log << "Iteration,ExecutionTime(ms),ThreadID\n";
+    }
+
     for (int i = 0; i < NUM_ITERATIONS; ++i) {
         // Get execution start time
         struct timespec start_time;
@@ -95,15 +107,15 @@ void *periodic_task(void *arg) {
         if (DEBUG) std::cout << "[DEBUG] Thread " << thread_id << " Iteration " << i 
                              << " Next Wake-up Time: " << next_time.tv_sec << "." << next_time.tv_nsec << "\n";
 
-        // Log execution time (Optional)
-        std::ofstream log("execution_times.csv", std::ios::app);
-        log << i << "," << (start_time.tv_nsec / 1e6) << "\n";
-        log.close();
-        if (DEBUG) std::cout << "[DEBUG] Thread " << thread_id << " Iteration " << i << " logged.\n";
+        // Log execution time with Thread ID
+        log << i << "," << (start_time.tv_nsec / 1e6) << "," << thread_id << "\n";
+        if (DEBUG) std::cout << "[DEBUG] Thread " << thread_id << " Iteration " << i 
+                             << " logged in CSV with time " << (start_time.tv_nsec / 1e6) << " ms\n";
 
         std::cout << "Thread " << thread_id << " - Iteration " << i << std::endl;
     }
 
+    log.close(); // Close the file properly
     if (DEBUG) std::cout << "[DEBUG] Thread " << thread_id << " completed execution.\n";
     return NULL;
 }
@@ -131,7 +143,7 @@ int main() {
         usleep(5000); // Small delay to prevent overload during creation
     }
 
-    // Wait for all threads to finishs
+    // Wait for all threads to finish
     for (int i = 0; i < NUM_THREADS; ++i) {
         pthread_join(threads[i], NULL);
         if (DEBUG) std::cout << "[DEBUG] Thread " << i << " joined.\n";
