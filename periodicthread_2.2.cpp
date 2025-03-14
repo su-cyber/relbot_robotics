@@ -23,24 +23,25 @@ void log_system_stats() {
 
 // Periodic real-time task
 void *periodic_task(void *arg) {
-    int thread_id = *(int *)arg;  
+    int thread_id = *(int *)arg;
     delete (int*)arg;  // Free allocated memory immediately after use
 
     std::string thread_name = "rt_thread_" + std::to_string(thread_id);
     if (DEBUG) std::cout << "[DEBUG] Thread " << thread_id << " initialized.\n";
 
-    // Attach thread to EVL
+    // Attach thread to EVL with Round Robin scheduling
     struct evl_sched_attrs attrs;
     memset(&attrs, 0, sizeof(attrs));
-    attrs.sched_policy = SCHED_FIFO;  // Use real-time FIFO scheduling
-    attrs.sched_priority = 10;  // Lower priority to avoid Raspberry Pi overload
+    attrs.sched_policy = SCHED_RR;  // Use Round Robin scheduling
+    attrs.sched_priority = 5;  // Lower priority for fairness
+    attrs.sched_rr_quantum = 2000000;  // 2ms time slice (quantum)
 
     int ret = evl_attach_thread(EVL_CLONE_PUBLIC, thread_name.c_str(), &attrs);
     if (ret < 0) {
         std::cerr << "[ERROR] Thread " << thread_id << " failed to attach: " << strerror(-ret) << "\n";
         return NULL;
     }
-    if (DEBUG) std::cout << "[DEBUG] Thread " << thread_id << " attached to EVL.\n";
+    if (DEBUG) std::cout << "[DEBUG] Thread " << thread_id << " attached to EVL with Round Robin scheduling.\n";
 
     struct timespec next_time;
     evl_read_clock(EVL_CLOCK_MONOTONIC, &next_time);
