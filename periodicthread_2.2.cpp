@@ -49,11 +49,12 @@ void *periodic_task(void *arg) {
     // Manually pin thread to an available core (0, 2, or 3, avoiding Xenomai's Core 1)
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
-    int core = (thread_id % 3 == 0) ? 0 : (thread_id % 3 == 1) ? 2 : 3; // Only use cores 0, 2, and 3
+    int core_assignment[3] = {0, 2, 3}; // Allowed cores
+    int core = core_assignment[thread_id % 3]; // Distribute across cores 0, 2, 3
     CPU_SET(core, &cpuset);
-    ret = evl_set_thread_cpu(getpid(), &cpuset);
+    ret = sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
     if (ret < 0) {
-        std::cerr << "[ERROR] Thread " << thread_id << " failed to set CPU affinity: " << strerror(-ret) << "\n";
+        std::cerr << "[ERROR] Thread " << thread_id << " failed to set CPU affinity: " << strerror(errno) << "\n";
     } else {
         if (DEBUG) std::cout << "[DEBUG] Thread " << thread_id << " assigned to Core " << core << "\n";
     }
