@@ -36,7 +36,7 @@ void *periodic_task(void *arg) {
     // Attach thread to EVL with FIFO scheduling
     struct evl_sched_attrs attrs;
     memset(&attrs, 0, sizeof(attrs));
-    attrs.sched_policy = SCHED_FIFO;  // **Use FIFO instead of Round Robin**
+    attrs.sched_policy = SCHED_FIFO;  // Use FIFO instead of Round Robin
     attrs.sched_priority = 10;  // Higher priority to prevent delays
 
     int ret = evl_attach_thread(EVL_CLONE_PUBLIC, thread_name.c_str(), &attrs);
@@ -70,6 +70,15 @@ void *periodic_task(void *arg) {
 
     if (DEBUG) std::cout << "[DEBUG] Thread " << thread_id << " starting periodic loop.\n";
 
+    // Open a separate CSV file for each thread
+    std::string filename = "execution_thread_" + std::to_string(thread_id) + ".csv";
+    std::ofstream log(filename);
+    if (!log.is_open()) {
+        std::cerr << "[ERROR] Could not open file: " << filename << "\n";
+        return NULL;
+    }
+    log << "Iteration,ExecutionTime(ms)\n"; // Write CSV header
+
     for (int i = 0; i < NUM_ITERATIONS; ++i) {
         // Get execution start time
         struct timespec start_time;
@@ -95,16 +104,19 @@ void *periodic_task(void *arg) {
         if (DEBUG) std::cout << "[DEBUG] Thread " << thread_id << " Iteration " << i 
                              << " Next Wake-up Time: " << next_time.tv_sec << "." << next_time.tv_nsec << "\n";
 
-        // Log execution time (Optional)
-        std::ofstream log("execution_times.csv", std::ios::app);
-        log << i << "," << (start_time.tv_nsec / 1e6) << "\n";
-        log.close();
-        if (DEBUG) std::cout << "[DEBUG] Thread " << thread_id << " Iteration " << i << " logged.\n";
+        // Calculate execution time in ms
+        double elapsed_time_ms = (next_time.tv_sec - start_time.tv_sec) * 1e3 +
+                                 (next_time.tv_nsec - start_time.tv_nsec) / 1e6;
+
+        // Write execution time to the thread's CSV file
+        log << i << "," << elapsed_time_ms << "\n";
+        if (DEBUG) std::cout << "[DEBUG] Thread " << thread_id << " Iteration " << i << " logged in " << filename << "\n";
 
         std::cout << "Thread " << thread_id << " - Iteration " << i << std::endl;
     }
 
-    if (DEBUG) std::cout << "[DEBUG] Thread " << thread_id << " completed execution.\n";
+    log.close(); // Close the file
+    if (DEBUG) std::cout << "[DEBUG] Thread " << thread_id << " completed execution and saved data to " << filename << "\n";
     return NULL;
 }
 
