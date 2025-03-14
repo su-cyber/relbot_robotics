@@ -7,13 +7,17 @@
 #include <cstring>  // For memset
 #include <errno.h>  // For strerror
 #include <unistd.h> // For usleep()
+#include <sched.h>  // For CPU affinity
+#include <atomic>   // For thread synchronization
 
 #define PERIOD_NS 1000000  // 1ms period
-#define NUM_ITERATIONS 100  // Reduce iterations for testing
-#define NUM_THREADS 2  // Limit to 2 threads for Raspberry Pi stability
+#define NUM_ITERATIONS 100
+#define NUM_THREADS 2  // Limit to 2 threads for stability
 #define DEBUG 1  // Enable (1) or Disable (0) Debug Messages
 
-// Function for logging system state (optional)
+std::atomic<int> threads_ready(0); // Atomic counter for thread synchronization
+
+// Function for logging system state
 void log_system_stats() {
     std::ofstream log("system_log.txt", std::ios::app);
     log << "Running test at: " << time(NULL) << std::endl;
@@ -33,7 +37,7 @@ void *periodic_task(void *arg) {
     struct evl_sched_attrs attrs;
     memset(&attrs, 0, sizeof(attrs));
     attrs.sched_policy = SCHED_RR;  // Use Round Robin scheduling
-    attrs.sched_priority = 5;  // Lower priority for fairness
+    attrs.sched_priority = 3;  // Lower priority to avoid CPU overload
 
     int ret = evl_attach_thread(EVL_CLONE_PUBLIC, thread_name.c_str(), &attrs);
     if (ret < 0) {
@@ -42,8 +46,27 @@ void *periodic_task(void *arg) {
     }
     if (DEBUG) std::cout << "[DEBUG] Thread " << thread_id << " attached to EVL with Round Robin scheduling.\n";
 
+    // Manually pin thread to an available core (0, 2, or 3, avoiding Xenomai's Core 1)
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    int core = (thread_id % 3 == 0) ? 0 : (thread_id % 3 == 1) ? 2 : 3; // Only use cores 0, 2, and 3
+    CPU_SET(core, &cpuset);
+    ret = evl_set_thread_cpu(getpid(), &cpuset);
+    if (ret < 0) {
+        std::cerr << "[ERROR] Thread " << thread_id << " failed to set CPU affinity: " << strerror(-ret) << "\n";
+    } else {
+        if (DEBUG) std::cout << "[DEBUG] Thread " << thread_id << " assigned to Core " << core << "\n";
+    }
+
     struct timespec next_time;
     evl_read_clock(EVL_CLOCK_MONOTONIC, &next_time);
+
+    // Synchronize threads before execution
+    threads_ready.fetch_add(1);
+    while (threads_ready.load() < NUM_THREADS) {
+        usleep(100);  // Wait for all threads to be ready
+    }
+
     if (DEBUG) std::cout << "[DEBUG] Thread " << thread_id << " starting periodic loop.\n";
 
     for (int i = 0; i < NUM_ITERATIONS; ++i) {
@@ -60,11 +83,13 @@ void *periodic_task(void *arg) {
         }
 
         // Sleep until next period
-        next_time.tv_nsec += PERIOD_NS;
+        next_time.tv_sec = start_time.tv_sec;
+        next_time.tv_nsec = start_time.tv_nsec + PERIOD_NS;
         while (next_time.tv_nsec >= 1000000000) {
             next_time.tv_sec++;
             next_time.tv_nsec -= 1000000000;
         }
+
         evl_sleep_until(EVL_CLOCK_MONOTONIC, &next_time);
         if (DEBUG) std::cout << "[DEBUG] Thread " << thread_id << " Iteration " << i 
                              << " Next Wake-up Time: " << next_time.tv_sec << "." << next_time.tv_nsec << "\n";
