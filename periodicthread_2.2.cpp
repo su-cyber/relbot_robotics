@@ -141,7 +141,7 @@ int main() {
             return 1;
         }
         usleep(5000); // Small delay to prevent overload during creation
-    }
+    } //lalalaloskdkdp[wfjr]
 
     // Wait for all threads to finish
     for (int i = 0; i < NUM_THREADS; ++i) {
