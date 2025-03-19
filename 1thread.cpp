@@ -4,6 +4,7 @@
 #include <evl/clock.h>
 #include <evl/thread.h>
 #include <evl/timer.h>
+#include <evl/poll.h>
 #include <cstring>
 #include <errno.h>
 #include <unistd.h>
@@ -53,12 +54,17 @@ void *periodic_task(void *arg) {
     // Record the start time
     evl_read_clock(EVL_CLOCK_MONOTONIC, &start_time);
 
-    // Main loop: wait for timer and record timing info
+    // Main loop: poll timer and record timing info
     for (int i = 0; i < NUM_ITERATIONS; ++i) {
-        // Wait for the timer to fire
-        evl_wait_timer(timer_fd);
+        // Poll the timer file descriptor
+        struct evl_poll_event pe;
+        ret = evl_poll(timer_fd, &pe, 1);
+        if (ret < 0) {
+            std::cerr << "[ERROR] Failed to poll timer: " << strerror(-ret) << "\n";
+            break;
+        }
 
-        // Once the timer expires, get the current time
+        // Once the timer is ready, get the current time
         evl_read_clock(EVL_CLOCK_MONOTONIC, &current_time);
 
         // Calculate the expected and actual times
