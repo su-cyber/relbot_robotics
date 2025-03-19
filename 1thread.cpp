@@ -1,22 +1,17 @@
 #include <iostream>
 #include <pthread.h>
 #include <evl/thread.h>
-#include <evl/timer.h>
-#include <evl/clock.h>
 #include <sched.h>
 #include <unistd.h>
 #include <cstring>
 
-#define PERIOD_NS 1000000  // 1ms period in nanoseconds
-#define CPU_CORE 1         // Assign thread to core 1
+#define CPU_CORE 1  // Assign thread to core 1
 
 // Real-time thread function
 void* rt_thread(void* arg) {
-    int timer_fd;
-    
     std::cout << "[INFO] Real-time thread initializing...\n";
 
-    // Attach thread to Xenomai (EVL)
+    // Attach the thread to Xenomai (EVL)
     struct evl_sched_attrs attrs;
     memset(&attrs, 0, sizeof(attrs));
     attrs.sched_policy = SCHED_FIFO;
@@ -39,34 +34,21 @@ void* rt_thread(void* arg) {
         std::cout << "[INFO] Thread assigned to Core 1\n";
     }
 
-    // Open an EVL timer
-    timer_fd = evl_open_timer(EVL_CLOCK_MONOTONIC, "rt_timer");
-    if (timer_fd < 0) {
-        std::cerr << "[ERROR] Failed to open EVL timer: " << strerror(-timer_fd) << "\n";
-        return nullptr;
-    }
+    std::cout << "[INFO] Real-time thread running at full speed on core " << CPU_CORE << std::endl;
 
-    // Make the timer periodic
-    ret = evl_set_periodic(timer_fd, PERIOD_NS);
-    if (ret < 0) {
-        std::cerr << "[ERROR] evl_set_periodic failed: " << strerror(-ret) << "\n";
-        return nullptr;
-    }
-
-    std::cout << "[INFO] Real-time thread started on core " << CPU_CORE << std::endl;
-
+    // Run continuously without sleep
     while (true) {
-        // Wait for the next period
-        ret = evl_wait_period(timer_fd);
-        if (ret < 0) {
-            std::cerr << "[ERROR] evl_wait_period failed: " << strerror(-ret) << "\n";
-            break;
-        }
-
         struct timespec now;
         clock_gettime(CLOCK_MONOTONIC, &now);
-        std::cout << "[INFO] Real-time thread executing on core " << CPU_CORE
-                  << " at time " << now.tv_sec << "." << now.tv_nsec << std::endl;
+
+        // Simulate some computation (example: processing sensor data)
+        volatile int x = 0;
+        for (int i = 0; i < 10000; ++i) {
+            x += i;
+        }
+
+        std::cout << "[INFO] Real-time thread executing task at " 
+                  << now.tv_sec << "." << now.tv_nsec << std::endl;
     }
 
     return nullptr;
