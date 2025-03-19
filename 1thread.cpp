@@ -1,103 +1,70 @@
 #include <iostream>
-#include <fstream>
 #include <pthread.h>
-#include <evl/clock.h>
 #include <evl/thread.h>
 #include <evl/timer.h>
-#include <cstring>
-#include <errno.h>
-#include <unistd.h>
 #include <sched.h>
+#include <unistd.h>
+#include <time.h>
 
 #define PERIOD_NS 1000000  // 1ms period
-#define NUM_ITERATIONS 100
-#define DEBUG 1  // Enable (1) or Disable (0) Debug Messages
+#define CPU_CORE 1          // Assign thread to core 1
 
-std::ofstream csv_file("timing_data.csv"); // Open CSV file
+// Function for the real-time thread
+void* rt_thread(void* arg) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);  // Get current time
 
-void *periodic_task(void *arg) {
-    std::string thread_name = "rt_thread";
+    std::cout << "Real-time thread started on core " << CPU_CORE << std::endl;
 
-    if (DEBUG) std::cout << "[DEBUG] Thread initialized.\n";
+    while (true) {
+        ts.tv_nsec += PERIOD_NS;
+        if (ts.tv_nsec >= 1000000000) { // Handle overflow
+            ts.tv_nsec -= 1000000000;
+            ts.tv_sec++;
+        }
 
-    // Attach thread to Xenomai EVL core
-    int ret = evl_attach_self(thread_name.c_str());
-    if (ret < 0) {
-        std::cerr << "[ERROR] Thread failed to attach: " << strerror(-ret) << "\n";
-        return NULL;
-    }
-
-    // Create periodic timer
-    int timer_fd = evl_new_timer(EVL_CLOCK_MONOTONIC);
-    if (timer_fd < 0) {
-        std::cerr << "[ERROR] Failed to create timer: " << strerror(-timer_fd) << "\n";
-        return NULL;
-    }
-
-    // Initialize timer to fire every 1ms
-    struct itimerspec ts;
-    ts.it_interval = {.tv_sec = 0, .tv_nsec = PERIOD_NS};
-    ts.it_value = ts.it_interval;  // First expiration after 1ms
-
-    ret = evl_set_timer(timer_fd, &ts, NULL);
-    if (ret < 0) {
-        std::cerr << "[ERROR] Failed to start timer: " << strerror(-ret) << "\n";
-        return NULL;
-    }
-
-    struct timespec start_time, current_time;
-    
-    // Write CSV headers
-    csv_file << "Iteration,Expected Time (ns),Actual Time (ns),Jitter (ns)\n";
-
-    // Record the start time
-    evl_read_clock(EVL_CLOCK_MONOTONIC, &start_time);
-
-    // Main loop: wait for timer and record timing info
-    for (int i = 0; i < NUM_ITERATIONS; ++i) {
-        uint64_t expirations;
-        
-        // Wait for the next timer expiration using read()
-        ssize_t bytes = read(timer_fd, &expirations, sizeof(expirations));
-        if (bytes != sizeof(expirations)) {
-            std::cerr << "[ERROR] Failed to read timer expiration count: " << strerror(errno) << "\n";
+        int ret = evl_usleep(PERIOD_NS / 1000);  // Sleep in microseconds
+        if (ret) {
+            std::cerr << "evl_usleep failed: " << strerror(-ret) << std::endl;
             break;
         }
 
-        // Once the timer expires, get the current time
-        evl_read_clock(EVL_CLOCK_MONOTONIC, &current_time);
-
-        // Calculate the expected and actual times
-        long expected_time = (start_time.tv_sec * 1e9 + start_time.tv_nsec) + 
-                             (i + 1) * PERIOD_NS;
-        long actual_time = current_time.tv_sec * 1e9 + current_time.tv_nsec;
-        long jitter = actual_time - expected_time;
-
-        // Log to CSV
-        csv_file << i + 1 << "," << expected_time << "," << actual_time << "," << jitter << "\n";
-
-        if (DEBUG) {
-            std::cout << "[DEBUG] Iteration " << i + 1
-                      << " | Expected: " << expected_time
-                      << " ns | Actual: " << actual_time
-                      << " ns | Jitter: " << jitter << " ns\n";
-        }
+        std::cout << "Real-time thread executing on core " << CPU_CORE
+                  << " at time " << ts.tv_sec << "." << ts.tv_nsec << std::endl;
     }
 
-    csv_file.close();
-    std::cout << "[INFO] Timing data saved to timing_data.csv\n";
-    return NULL;
+    return nullptr;
 }
 
 int main() {
     pthread_t thread;
+    cpu_set_t cpuset;
+    struct sched_param param;
 
-    if (pthread_create(&thread, NULL, periodic_task, NULL) != 0) {
-        std::cerr << "[ERROR] Failed to create thread.\n";
-        return 1;
+    // Initialize CPU set and bind the thread to core 1
+    CPU_ZERO(&cpuset);
+    CPU_SET(CPU_CORE, &cpuset);
+
+    // Create the real-time thread
+    if (pthread_create(&thread, nullptr, rt_thread, nullptr)) {
+        std::cerr << "Error: pthread_create failed!" << std::endl;
+        return EXIT_FAILURE;
     }
 
-    pthread_join(thread, NULL);
-    std::cout << "[INFO] Real-time thread completed execution.\n";
-    return 0;
+    // Set CPU affinity to core 1
+    if (pthread_setaffinity_np(thread, sizeof(cpu_set_t), &cpuset)) {
+        std::cerr << "Error: pthread_setaffinity_np failed!" << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    // Set real-time priority
+    param.sched_priority = 80;  // Priority 80 for high-priority real-time tasks
+    if (pthread_setschedparam(thread, SCHED_FIFO, &param)) {
+        std::cerr << "Error: pthread_setschedparam failed!" << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    // Wait for the thread to finish (won't happen in a periodic loop)
+    pthread_join(thread, nullptr);
+    return EXIT_SUCCESS;
 }
