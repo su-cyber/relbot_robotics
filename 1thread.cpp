@@ -21,7 +21,7 @@ void* rt_thread(void* arg) {
     struct evl_sched_attrs attrs;
     memset(&attrs, 0, sizeof(attrs));
     attrs.sched_policy = SCHED_FIFO;
-    attrs.sched_priority = 90;  // High-priority for real-time execution
+    attrs.sched_priority = 80;  // Set priority
 
     int ret = evl_attach_thread(EVL_CLONE_PUBLIC, "rt_thread", &attrs);
     if (ret < 0) {
@@ -29,13 +29,7 @@ void* rt_thread(void* arg) {
         return nullptr;
     }
 
-    // Confirm thread is now a real-time EVL thread
-    int evl_tid = evl_current();
-    if (evl_tid < 0) {
-        std::cerr << "[ERROR] Thread not running in EVL real-time mode: " << strerror(-evl_tid) << "\n";
-    } else {
-        std::cout << "[INFO] Thread successfully attached to Xenomai (EVL), TID: " << evl_tid << "\n";
-    }
+    std::cout << "[INFO] Thread successfully attached to Xenomai (EVL)\n";
 
     // Set CPU affinity to Core 1 (Xenomai Core)
     cpu_set_t cpuset;
