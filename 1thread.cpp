@@ -17,7 +17,7 @@ std::ofstream csv_file("timing_data.csv"); // Open CSV file
 
 void *periodic_task(void *arg) {
     std::string thread_name = "rt_thread";
-    
+
     if (DEBUG) std::cout << "[DEBUG] Thread initialized.\n";
 
     // Attach thread to Xenomai EVL core
@@ -46,28 +46,34 @@ void *periodic_task(void *arg) {
     }
 
     struct timespec start_time, current_time;
-    
+
     // Write CSV headers
     csv_file << "Iteration,Expected Time (ns),Actual Time (ns),Jitter (ns)\n";
-    
+
+    // Record the start time
     evl_read_clock(EVL_CLOCK_MONOTONIC, &start_time);
 
+    // Main loop: wait for timer and record timing info
     for (int i = 0; i < NUM_ITERATIONS; ++i) {
-        // Wait for the next timer expiration
-        evl_read(timer_fd, &current_time, sizeof(current_time)); 
+        // Wait for the timer to fire
+        evl_wait_timer(timer_fd);
 
-        // Calculate expected and actual times
+        // Once the timer expires, get the current time
+        evl_read_clock(EVL_CLOCK_MONOTONIC, &current_time);
+
+        // Calculate the expected and actual times
         long expected_time = (start_time.tv_sec * 1e9 + start_time.tv_nsec) + 
-                             (i + 1) * PERIOD_NS;  // Fix: i+1
+                             (i + 1) * PERIOD_NS;
         long actual_time = current_time.tv_sec * 1e9 + current_time.tv_nsec;
         long jitter = actual_time - expected_time;
 
+        // Log to CSV
         csv_file << i + 1 << "," << expected_time << "," << actual_time << "," << jitter << "\n";
-        
+
         if (DEBUG) {
-            std::cout << "[DEBUG] Iteration " << i + 1 
-                      << " | Expected: " << expected_time 
-                      << " ns | Actual: " << actual_time 
+            std::cout << "[DEBUG] Iteration " << i + 1
+                      << " | Expected: " << expected_time
+                      << " ns | Actual: " << actual_time
                       << " ns | Jitter: " << jitter << " ns\n";
         }
     }
@@ -79,7 +85,7 @@ void *periodic_task(void *arg) {
 
 int main() {
     pthread_t thread;
-    
+
     if (pthread_create(&thread, NULL, periodic_task, NULL) != 0) {
         std::cerr << "[ERROR] Failed to create thread.\n";
         return 1;
