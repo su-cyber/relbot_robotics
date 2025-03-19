@@ -4,7 +4,6 @@
 #include <evl/clock.h>
 #include <evl/thread.h>
 #include <evl/timer.h>
-#include <evl/poll.h>
 #include <cstring>
 #include <errno.h>
 #include <unistd.h>
@@ -29,7 +28,7 @@ void *periodic_task(void *arg) {
     }
 
     // Create periodic timer
-    int timer_fd = evl_create_timer(EVL_CLOCK_MONOTONIC);
+    int timer_fd = evl_new_timer(EVL_CLOCK_MONOTONIC);
     if (timer_fd < 0) {
         std::cerr << "[ERROR] Failed to create timer: " << strerror(-timer_fd) << "\n";
         return NULL;
@@ -47,24 +46,25 @@ void *periodic_task(void *arg) {
     }
 
     struct timespec start_time, current_time;
-
+    
     // Write CSV headers
     csv_file << "Iteration,Expected Time (ns),Actual Time (ns),Jitter (ns)\n";
 
     // Record the start time
     evl_read_clock(EVL_CLOCK_MONOTONIC, &start_time);
 
-    // Main loop: poll timer and record timing info
+    // Main loop: wait for timer and record timing info
     for (int i = 0; i < NUM_ITERATIONS; ++i) {
-        // Poll the timer file descriptor
-        struct evl_poll_event pe;
-        ret = evl_poll(timer_fd, &pe, 1);
-        if (ret < 0) {
-            std::cerr << "[ERROR] Failed to poll timer: " << strerror(-ret) << "\n";
+        uint64_t expirations;
+        
+        // Wait for the next timer expiration using read()
+        ssize_t bytes = read(timer_fd, &expirations, sizeof(expirations));
+        if (bytes != sizeof(expirations)) {
+            std::cerr << "[ERROR] Failed to read timer expiration count: " << strerror(errno) << "\n";
             break;
         }
 
-        // Once the timer is ready, get the current time
+        // Once the timer expires, get the current time
         evl_read_clock(EVL_CLOCK_MONOTONIC, &current_time);
 
         // Calculate the expected and actual times
