@@ -29,13 +29,12 @@ void* rt_thread(void* arg) {
         return nullptr;
     }
 
-    // Verify if the thread is running in EVL real-time mode
-    int mode = evl_get_task_mode();
-    if (mode < 0) {
-        std::cerr << "[ERROR] Failed to get EVL task mode: " << strerror(-mode) << "\n";
+    // Confirm thread is now a real-time EVL thread
+    int evl_tid = evl_current();
+    if (evl_tid < 0) {
+        std::cerr << "[ERROR] Thread not running in EVL real-time mode: " << strerror(-evl_tid) << "\n";
     } else {
-        std::cout << "[INFO] Thread running in mode: " 
-                  << ((mode & T_WOSS) ? "EVL (Real-Time)" : "Linux (Non-Real-Time)") << "\n";
+        std::cout << "[INFO] Thread successfully attached to Xenomai (EVL), TID: " << evl_tid << "\n";
     }
 
     // Set CPU affinity to Core 1 (Xenomai Core)
