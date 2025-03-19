@@ -5,16 +5,50 @@
 #include <sched.h>
 #include <unistd.h>
 #include <time.h>
+#include <cstring>
 
 #define PERIOD_NS 1000000  // 1ms period
-#define CPU_CORE 1          // Assign thread to core 1
+#define CPU_CORE 1         // Assign thread to core 1
 
-// Function for the real-time thread
+// Real-time thread function
 void* rt_thread(void* arg) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);  // Get current time
 
-    std::cout << "Real-time thread started on core " << CPU_CORE << std::endl;
+    std::cout << "[INFO] Real-time thread initializing...\n";
+
+    // Attach the thread to Xenomai's EVL real-time domain
+    struct evl_sched_attrs attrs;
+    memset(&attrs, 0, sizeof(attrs));
+    attrs.sched_policy = SCHED_FIFO;
+    attrs.sched_priority = 90;  // High-priority for real-time execution
+
+    int ret = evl_attach_thread(EVL_CLONE_PUBLIC, "rt_thread", &attrs);
+    if (ret < 0) {
+        std::cerr << "[ERROR] evl_attach_thread failed: " << strerror(-ret) << "\n";
+        return nullptr;
+    }
+
+    // Verify if the thread is running in EVL real-time mode
+    int mode = evl_get_task_mode();
+    if (mode < 0) {
+        std::cerr << "[ERROR] Failed to get EVL task mode: " << strerror(-mode) << "\n";
+    } else {
+        std::cout << "[INFO] Thread running in mode: " 
+                  << ((mode & T_WOSS) ? "EVL (Real-Time)" : "Linux (Non-Real-Time)") << "\n";
+    }
+
+    // Set CPU affinity to Core 1 (Xenomai Core)
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(CPU_CORE, &cpuset);
+    if (sched_setaffinity(0, sizeof(cpu_set_t), &cpuset) < 0) {
+        std::cerr << "[ERROR] Failed to set CPU affinity to Core 1: " << strerror(errno) << "\n";
+    } else {
+        std::cout << "[INFO] Thread assigned to Core 1\n";
+    }
+
+    std::cout << "[INFO] Real-time thread started on core " << CPU_CORE << std::endl;
 
     while (true) {
         ts.tv_nsec += PERIOD_NS;
@@ -25,11 +59,11 @@ void* rt_thread(void* arg) {
 
         int ret = evl_usleep(PERIOD_NS / 1000);  // Sleep in microseconds
         if (ret) {
-            std::cerr << "evl_usleep failed: " << strerror(-ret) << std::endl;
+            std::cerr << "[ERROR] evl_usleep failed: " << strerror(-ret) << std::endl;
             break;
         }
 
-        std::cout << "Real-time thread executing on core " << CPU_CORE
+        std::cout << "[INFO] Real-time thread executing on core " << CPU_CORE
                   << " at time " << ts.tv_sec << "." << ts.tv_nsec << std::endl;
     }
 
@@ -38,33 +72,22 @@ void* rt_thread(void* arg) {
 
 int main() {
     pthread_t thread;
-    cpu_set_t cpuset;
-    struct sched_param param;
 
-    // Initialize CPU set and bind the thread to core 1
-    CPU_ZERO(&cpuset);
-    CPU_SET(CPU_CORE, &cpuset);
+    // Attach the main thread to EVL to ensure Xenomai scheduling
+    if (evl_attach_self("main_thread") < 0) {
+        std::cerr << "[ERROR] Failed to attach main thread to EVL\n";
+        return EXIT_FAILURE;
+    }
+    std::cout << "[INFO] Main thread attached to EVL.\n";
 
     // Create the real-time thread
     if (pthread_create(&thread, nullptr, rt_thread, nullptr)) {
-        std::cerr << "Error: pthread_create failed!" << std::endl;
+        std::cerr << "[ERROR] pthread_create failed!\n";
         return EXIT_FAILURE;
     }
 
-    // Set CPU affinity to core 1
-    if (pthread_setaffinity_np(thread, sizeof(cpu_set_t), &cpuset)) {
-        std::cerr << "Error: pthread_setaffinity_np failed!" << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    // Set real-time priority
-    param.sched_priority = 80;  // Priority 80 for high-priority real-time tasks
-    if (pthread_setschedparam(thread, SCHED_FIFO, &param)) {
-        std::cerr << "Error: pthread_setschedparam failed!" << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    // Wait for the thread to finish (won't happen in a periodic loop)
+    // Wait for the real-time thread to finish (infinite loop)
     pthread_join(thread, nullptr);
+
     return EXIT_SUCCESS;
 }
