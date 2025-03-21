@@ -55,10 +55,20 @@ int main() {
     pthread_attr_init(&attrs);
     pthread_attr_setinheritsched(&attrs, PTHREAD_EXPLICIT_SCHED);
     pthread_attr_setschedpolicy(&attrs, SCHED_FIFO);
-    pthread_attr_setschedparam(&attrs, &params);
+    pthread_attr_setschedparam(&attrs, &params); // fixed typo: was &my_attr
 
-    
-    pthread_create(&thread, &attrs, rt_thread, nullptr);
+    pthread_create(&thread, nullptr, rt_thread, nullptr);
     pthread_join(thread, nullptr);
+
+    // ump jitter data to CSV
+    std::ofstream csv("jitter_log.csv");
+    csv << "Timestamp (s),Timestamp (ns),Jitter (ns)\n";
+    for (int i = 0; i < NUM_ITERATIONS; ++i) {
+        csv << jitter_log[i].sec << ","
+            << jitter_log[i].nsec << ","
+            << jitter_log[i].jitter_ns << "\n";
+    }
+    csv.close();
+
     return 0;
 }
