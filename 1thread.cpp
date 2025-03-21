@@ -19,7 +19,7 @@ void* rt_thread(void* arg) {
     struct evl_sched_attrs attrs;
     memset(&attrs, 0, sizeof(attrs));
     attrs.sched_policy = SCHED_FIFO;
-    attrs.sched_priority = 80;  // High priority
+    attrs.sched_priority = 80;
 
     int ret = evl_attach_thread(EVL_CLONE_PUBLIC, "rt_thread", &attrs);
     if (ret < 0) {
@@ -40,14 +40,14 @@ void* rt_thread(void* arg) {
 
     std::cout << "[INFO] Real-time thread running at full speed on core " << CPU_CORE << std::endl;
 
-    // Log file header
+
     log_file << "Timestamp (s),Timestamp (ns),Jitter (ns)\n";
 
     struct timespec prev_time, now;
     clock_gettime(CLOCK_MONOTONIC, &prev_time);
 
-    // Run continuously
-    while (true) {
+    int i = 0;
+    while (i < 5000) {
         clock_gettime(CLOCK_MONOTONIC, &now);
 
         long jitter_ns = (now.tv_sec - prev_time.tv_sec) * 1e9 + (now.tv_nsec - prev_time.tv_nsec);
@@ -65,6 +65,7 @@ void* rt_thread(void* arg) {
         std::cout << "[INFO] Real-time thread executing task at " 
                   << now.tv_sec << "." << now.tv_nsec 
                   << " with jitter " << jitter_ns << " ns" << std::endl;
+        i++;
     }
 
     return nullptr;
@@ -86,7 +87,6 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    // Wait for the real-time thread to finish (infinite loop)
     pthread_join(thread, nullptr);
 
     log_file.close();
