@@ -6,9 +6,10 @@
 #include <time.h>
 #include <evl/clock.h>
 #include <evl/proxy.h>
+#include <fstream>
 
 #define CPU_CORE 1
-#define NUM_ITERATIONS 100000
+#define NUM_ITERATIONS 5000
 
 struct JitterEntry {
     long sec;
@@ -55,12 +56,10 @@ int main() {
     pthread_attr_init(&attrs);
     pthread_attr_setinheritsched(&attrs, PTHREAD_EXPLICIT_SCHED);
     pthread_attr_setschedpolicy(&attrs, SCHED_FIFO);
-    pthread_attr_setschedparam(&attrs, &params); // fixed typo: was &my_attr
-
-    pthread_create(&thread, nullptr, rt_thread, nullptr);
+    pthread_attr_setschedparam(&attrs, &params);
+    pthread_create(&thread, &attrs, rt_thread, nullptr);
     pthread_join(thread, nullptr);
 
-    // ump jitter data to CSV
     std::ofstream csv("jitter_log.csv");
     csv << "Timestamp (s),Timestamp (ns),Jitter (ns)\n";
     for (int i = 0; i < NUM_ITERATIONS; ++i) {
@@ -69,6 +68,5 @@ int main() {
             << jitter_log[i].jitter_ns << "\n";
     }
     csv.close();
-
     return 0;
 }
