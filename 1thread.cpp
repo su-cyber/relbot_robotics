@@ -5,9 +5,10 @@
 #include <cstring>
 #include <time.h>
 #include <evl/clock.h>
+#include <evl/proxy.h>
 
 #define CPU_CORE 1
-#define NUM_ITERATIONS 1000000
+#define NUM_ITERATIONS 100000
 
 struct JitterEntry {
     long sec;
@@ -17,15 +18,15 @@ struct JitterEntry {
 JitterEntry jitter_log[NUM_ITERATIONS];  // In-memory array
 
 void* rt_thread(void* arg) {
-    struct evl_sched_attrs attrs;
-    memset(&attrs, 0, sizeof(attrs));
-
+    // struct evl_sched_attrs attrs;
+    // memset(&attrs, 0, sizeof(attrs));
+    
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
     CPU_SET(CPU_CORE, &cpuset);
     pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
 
-    if (evl_attach_thread(EVL_CLONE_PUBLIC, "rt_thread", &attrs) < 0)
+    if (!evl_attach_self("rt_thread"))
         return nullptr;
 
     struct timespec prev_time, now;
@@ -42,6 +43,7 @@ void* rt_thread(void* arg) {
 
         jitter_log[i] = {now.tv_sec, now.tv_nsec, jitter};
     }
+    evl_detach_self();
     return nullptr;
 }
 
@@ -53,8 +55,10 @@ int main() {
     pthread_attr_init(&attrs);
     pthread_attr_setinheritsched(&attrs, PTHREAD_EXPLICIT_SCHED);
     pthread_attr_setschedpolicy(&attrs, SCHED_FIFO);
-    pthread_attr_setschedparam(&my_attr, &params);
-    pthread_create(&thread, nullptr, rt_thread, nullptr);
+    pthread_attr_setschedparam(&attrs, &params);
+
+    
+    pthread_create(&thread, &attrs, rt_thread, nullptr);
     pthread_join(thread, nullptr);
     return 0;
 }
