@@ -55,8 +55,19 @@ namespace cam2image_vm2ros
     if (!remote_mode_)
     {
       cap.open(device_id_);
-      cap.set(cv::CAP_PROP_FRAME_WIDTH, static_cast<double>(width_));
-      cap.set(cv::CAP_PROP_FRAME_HEIGHT, static_cast<double>(height_));
+
+      // Check if we got a valid WxH passed, else use full frame size. Full frame useful for ROS, small for X11 forwarding check
+      if (width_ > 0 && height_ > 0)
+      {
+        cap.set(cv::CAP_PROP_FRAME_WIDTH, static_cast<double>(width_));
+        cap.set(cv::CAP_PROP_FRAME_HEIGHT, static_cast<double>(height_));
+      }
+      else
+      {
+        width_ = cap.get(cv::CAP_PROP_FRAME_WIDTH);
+        height_ = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+      }
+
       if (!cap.isOpened())
       {
         RCLCPP_ERROR(this->get_logger(), "Could not open video stream");
@@ -104,6 +115,11 @@ namespace cam2image_vm2ros
       cv::flip(frame, frame, 1);
     }
 
+    if (rotate_)
+    {
+      cv::rotate(frame, frame, cv::RotateFlags::ROTATE_180);
+    }
+
     // optionally show the image
     if (show_camera_)
     {
@@ -129,13 +145,14 @@ namespace cam2image_vm2ros
     socket_port_ = this->declare_parameter("socket_port", 80);
     freq_ = this->declare_parameter("frequency", 30.0);
     show_camera_ = this->declare_parameter("show_camera", false);
-    device_id_ = static_cast<int>(this->declare_parameter("device_id", 0));
-    width_ = this->declare_parameter("width", 320);
-    height_ = this->declare_parameter("height", 240);
+    device_id_ = static_cast<int>(this->declare_parameter("device_id", -1));
+    width_ = this->declare_parameter("width", 0);
+    height_ = this->declare_parameter("height", 0);
     reliability_ = this->declare_parameter("reliability", "reliable");
     durability_ = this->declare_parameter("durability", "volatile");
     history_ = this->declare_parameter("history", "keep_last");
     depth_ = this->declare_parameter("depth", 10);
+    rotate_ = this->declare_parameter("rotate", true);
   }
 
   // this code generates the output for the --help command
@@ -145,17 +162,35 @@ namespace cam2image_vm2ros
         std::find(args.begin(), args.end(), "-h") != args.end())
     {
       std::stringstream ss;
-      ss << "Usage: cam2image [-h] [--ros-args [-p param:=value] ...]" << std::endl;
-      ss << "Publish images from a camera stream." << std::endl;
-      ss << "Example: ros2 run image_tools cam2image --ros-args -p reliability:=best_effort";
+      ss << "\n Usage: cam2image [-h] [--ros-args [-p param:=value] ...]" << std::endl;
+      ss << "\n Publish images from a camera stream." << std::endl;
+      ss << " Example: ros2 run image_tools cam2image --ros-args -p reliability:=best_effort";
       ss << std::endl
          << std::endl;
       ss << "Options:" << std::endl;
-      ss << "  -h, --help\t\tDisplay this help message and exit";
+      ss << " -h, --help \t\t Display this help message and exit";
       ss << std::endl
          << std::endl;
       ss << "Parameters:" << std::endl;
-      ss << "  reliability\t\tReliability QoS setting. Either 'reliable' (default) or 'best_effort'";
+      ss << "  remote_mode \t\t Use a remotely streamed input, or local camera. Default 'false' (local camera)'\n";
+
+      ss << "\n If remote_mode is 'true':\n";
+      ss << "\t  remote_timeout \t How long the node should wait on a remote message before timing out\n";
+      ss << "\t  socket_ip \t\t IP address the remote node should listen to\n";
+      ss << "\t  socket_port \t\t Port the remote node should listen on\n";
+      ss << "\t  show_camera \t\t Show camera output. If running on a VM or the RELbot, X11 Forwarding needs to be enabled (ssh -X). Default 'false'\n";
+      
+      ss << "\n Camera settings: \n";
+      ss << "  width \t\t Width of output frame. Default 'camera_frame_width'\n";
+      ss << "  height \t\t Height of output frame. Default 'camera_frame_width'\n";
+      ss << "  device_id \t\t ID on which the camera can be found. Default '-1' (first camera)\n";
+      ss << "  rotate \t\t Rotate the camera input 180 degrees. Default 'true'\n";
+      
+      ss << "\n ROS publishing parameters: \n";
+      ss << "  reliability \t\t Reliability QoS setting. Either 'reliable' (default) or 'best_effort'\n";
+      ss << "  durability \t\t Durability QoS setting. Either 'volatile' (default) or 'transient local'\n";
+      ss << "  history \t\t History QoS setting. Either 'keep_last' (default) or 'keep_all'\n";
+      ss << "  depth \t\t Depth QoS setting. <Int> Default '10'\n";
       ss << std::endl;
       // ... (rest of the help message)
       std::cout << ss.str();
