@@ -110,10 +110,9 @@ namespace cam2image_vm2ros
       return;
     }
 
-    if (is_flipped_)
-    {
+
       cv::flip(frame, frame, 1);
-    }
+  
 
     if (rotate_)
     {
