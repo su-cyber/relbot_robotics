@@ -32,6 +32,7 @@ find_package(std_msgs REQUIRED)
 # Source Files
 file(GLOB CONTROLLER_SRC "controller/common/*.cpp")
 file(GLOB SRC "src/*.cpp")
+list(REMOVE_ITEM SRC "${CMAKE_CURRENT_SOURCE_DIR}/src/test_node.cpp")
 
 set(XENO  
     ${locationXenoSrc}FullStateMachine.cpp
@@ -75,7 +76,7 @@ install(TARGETS
 # Headers for everything (20sim, Xeno, ROS bridge, etc.)
 target_include_directories(template_20sim BEFORE PUBLIC 
     /usr/evl/include 
-    include/
+    ${CMAKE_SOURCE_DIR}/include
     ${locationXenoInclude}
     ${locationCommonInclude}
     controller/

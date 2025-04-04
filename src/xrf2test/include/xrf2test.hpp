@@ -16,11 +16,11 @@ struct ThisIsAStruct
 
 #pragma pack(0)
 
-class Template20Sim : public XenoFrt20Sim
+class xrf2test : public XenoFrt20Sim
 {
 public:
-    Template20Sim(uint write_decimator_freq, uint monitor_freq);
-    ~Template20Sim();
+    xrf2test(uint write_decimator_freq, uint monitor_freq);
+    ~xrf2test();
 private:
     XenoFileHandler file;
     struct ThisIsAStruct data_to_be_logged;
