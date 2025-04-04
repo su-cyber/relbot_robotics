@@ -20,7 +20,6 @@ private:
   void timer_callback()
   {
     auto msg = xrf2_msgs::msg::Ros2Xeno();
-    msg.header.stamp = this->get_clock()->now();
     msg.left_motor = 0.3;
     msg.right_motor = 0.3;
 
