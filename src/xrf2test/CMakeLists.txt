@@ -48,11 +48,18 @@ add_executable( template_20sim main.cpp
                 controller/LoopController.cpp
                 ${CONTROLLER_SRC} 
                 )
-
+add_executable(test_node src/test_node.cpp)
+ament_target_dependencies(test_node rclcpp xrf2_msgs)
 # Add the constant TIME_STEP_SIZE to definitions
 target_compile_definitions(template_20sim PRIVATE TIME_STEP_SIZE=${TIME_STEP_SIZE_VALUE})
 
 ament_target_dependencies(template_20sim PUBLIC rclcpp xrf2_msgs std_msgs)
+
+install(TARGETS
+  test_node
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 
 # Specify paths to header files
 target_include_directories( template_20sim BEFORE PUBLIC 
