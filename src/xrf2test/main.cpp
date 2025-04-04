@@ -3,7 +3,6 @@
 #include <sys/types.h>
 #include <pthread.h>
 #include <fstream>
-
 #include "xrf2test.hpp"
 
 volatile bool exitBool = false;
@@ -19,7 +18,7 @@ static void *XenoThread(void *arg)
 int main(int argc, char *argv[])
 {
     pthread_t th;
-    
+
     if(evl_init())
         error(1, errno, "evl_init()");
 
