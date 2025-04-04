@@ -25,7 +25,7 @@ message("TIME_STEP_SIZE_VALUE = " ${TIME_STEP_SIZE_VALUE})
 
 # Dependencies
 find_package(Threads REQUIRED)
-find_package(XRF2_msgs REQUIRED)
+find_package(xrf2_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 
@@ -59,12 +59,12 @@ add_executable(template_20sim
 
 # ROS2 test publisher executable
 add_executable(test_node src/test_node.cpp)
-ament_target_dependencies(test_node rclcpp XRF2_msgs)
+ament_target_dependencies(test_node rclcpp xrf2_msgs)
 
 # Apply TIME_STEP_SIZE from parsed XML
 target_compile_definitions(template_20sim PRIVATE TIME_STEP_SIZE=${TIME_STEP_SIZE_VALUE})
 
-ament_target_dependencies(template_20sim PUBLIC rclcpp XRF2_msgs std_msgs)
+ament_target_dependencies(template_20sim PUBLIC rclcpp xrf2_msgs std_msgs)
 
 # Install only the test_node (no need to install template_20sim for now)
 install(TARGETS
