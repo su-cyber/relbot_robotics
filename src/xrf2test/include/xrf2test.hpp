@@ -1,10 +1,10 @@
-#ifndef XRF2TEST_HPP
-#define XRF2TEST_HPP
+#ifndef TEMPLATE20SIM_HPP
+#define TEMPLATE20SIM_HPP
 
 #include "XenoFrt20Sim.hpp"
 #include "LoopController.h"
 
-#pragma pack(1)
+#pragma pack (1)    //https://carlosvin.github.io/langs/en/posts/cpp-pragma-pack/#_performance_test
 struct ThisIsAStruct
 {
     int this_is_a_int = 0;
@@ -13,6 +13,7 @@ struct ThisIsAStruct
     char this_is_a_char = 'R';
     bool this_is_a_bool = false;
 };
+
 #pragma pack(0)
 
 class xrf2test : public XenoFrt20Sim
@@ -28,6 +29,7 @@ private:
     double u[2];
     double y[2];
 protected:
+    //Functions
     int initialising() override;
     int initialised() override;
     int run() override;
@@ -37,7 +39,8 @@ protected:
     int paused() override;
     int error() override;
 
+    // current error
     int current_error = 0;
 };
 
-#endif // XRF2TEST_HPP
+#endif // TEMPLATE20SIM_HPP
