@@ -14,11 +14,15 @@ xrf2test::xrf2test(uint write_decimator_freq, uint monitor_freq)
     printf("%s: Constructing xrf2test\n", __FUNCTION__);
 
     // Add variables to logger before logging starts
-    logger.addVariable("this_is_a_int", integer);
-    logger.addVariable("this_is_a_double", double_);
-    logger.addVariable("this_is_a_float", float_);
-    logger.addVariable("this_is_a_char", character);
-    logger.addVariable("this_is_a_bool", boolean);
+    logger.addVariable("this_is_a_int", data_to_be_logged.this_is_a_int);
+    logger.addVariable("this_is_a_double", data_to_be_logged.this_is_a_double);
+    logger.addVariable("this_is_a_float", data_to_be_logged.this_is_a_float);
+    logger.addVariable("this_is_a_char", data_to_be_logged.this_is_a_char);
+    logger.addVariable("this_is_a_bool", data_to_be_logged.this_is_a_bool);
+
+    // Logging κινητήρων (ROS inputs)
+    logger.addVariable("motor_left", data_to_be_logged.motor_left);
+    logger.addVariable("motor_right", data_to_be_logged.motor_right);
 
     controller.SetFinishTime(0.0);  // Infinite run
 }
@@ -31,6 +35,12 @@ int xrf2test::initialising()
 
     logger.initialise();    // Only once
     ico_io.init();          // FPGA (if used)
+
+    // Άνοιγμα του Xenomai xbuffer (Ros → Xeno)
+    xeno_fd = open("/dev/evl/xbuf/Ros-Xeno", O_RDWR);
+    if (xeno_fd < 0) {
+        evl_printf("Failed to open /dev/evl/xbuf/Ros-Xeno: %s\n", strerror(errno));
+    }
 
     return 1;
 }
@@ -46,11 +56,26 @@ int xrf2test::run()
     logger.start();
     monitor.printf("Hello from run\n");
 
-    // Toggle and modify log data
+    // Ανάγνωση δεδομένων από ROS μέσω xbuffer
+    xrf2_msgs::msg::Ros2Xeno ros_data;
+    int read_size = read(xeno_fd, &ros_data, sizeof(ros_data));
+
+    if (read_size > 0) {
+        // Καταγραφή και αποθήκευση input
+        u[0] = ros_data.left_motor;
+        u[1] = ros_data.right_motor;
+
+        data_to_be_logged.motor_left = ros_data.left_motor;
+        data_to_be_logged.motor_right = ros_data.right_motor;
+    } else {
+        monitor.printf("No ROS data received this cycle\n");
+    }
+
+    // Στατική τροποποίηση dummy δεδομένων
     data_to_be_logged.this_is_a_bool = !data_to_be_logged.this_is_a_bool;
     data_to_be_logged.this_is_a_int++;
 
-    if(data_to_be_logged.this_is_a_char == 'R')
+    if (data_to_be_logged.this_is_a_char == 'R')
         data_to_be_logged.this_is_a_char = 'A';
     else if (data_to_be_logged.this_is_a_char == 'A')
         data_to_be_logged.this_is_a_char = 'M';
@@ -60,9 +85,10 @@ int xrf2test::run()
     data_to_be_logged.this_is_a_float /= 2;
     data_to_be_logged.this_is_a_double /= 4;
 
+    // Εκτέλεση ελέγχου
     controller.Calculate(u, y);
 
-    if(controller.IsFinished())
+    if (controller.IsFinished())
         return 1;
 
     return 0;

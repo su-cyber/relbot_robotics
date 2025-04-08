@@ -29,7 +29,6 @@ find_package(std_msgs REQUIRED)
 # Get controller and source files
 file(GLOB CONTROLLER_SRC "controller/common/*.cpp")
 file(GLOB SRC "src/*.cpp")
-list(REMOVE_ITEM SRC "${CMAKE_CURRENT_SOURCE_DIR}/src/test_node.cpp")  # <- prevent double main()
 
 # Xeno source from framework
 set(XENO  
@@ -47,8 +46,8 @@ set(XENO
     ${locationXenoSrc}XenoFrt20Sim.cpp
 )
 
-# 🔧 Real-Time Executable
-add_executable(template_20sim 
+#Real-Time Executable
+add_executable(xrf2test 
     main.cpp
     ${XENO}
     ${SRC}
@@ -56,24 +55,14 @@ add_executable(template_20sim
     ${CONTROLLER_SRC}
 )
 
-# 🧪 ROS 2 Test Publisher
-add_executable(test_node src/test_node.cpp)
-ament_target_dependencies(test_node rclcpp xrf2_msgs)
-
 # Define timestep as a macro
-target_compile_definitions(template_20sim PRIVATE TIME_STEP_SIZE=${TIME_STEP_SIZE_VALUE})
+target_compile_definitions(xrf2test PRIVATE TIME_STEP_SIZE=${TIME_STEP_SIZE_VALUE})
 
 # Link dependencies to FRT executable
-ament_target_dependencies(template_20sim PUBLIC rclcpp xrf2_msgs std_msgs)
-
-# Install the ROS 2 test node
-install(TARGETS
-  test_node
-  DESTINATION lib/${PROJECT_NAME}
-)
+ament_target_dependencies(xrf2test PUBLIC rclcpp xrf2_msgs std_msgs)
 
 # Include paths for all headers
-target_include_directories(template_20sim BEFORE PUBLIC 
+target_include_directories(xrf2test BEFORE PUBLIC 
     /usr/evl/include 
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${locationXenoInclude}
@@ -83,7 +72,13 @@ target_include_directories(template_20sim BEFORE PUBLIC
 )
 
 # Link Xenomai EVL user-space library
-target_link_directories(template_20sim PUBLIC /usr/evl/lib)
-target_link_libraries(template_20sim PRIVATE evl)
+target_link_directories(xrf2test PUBLIC /usr/evl/lib)
+target_link_libraries(xrf2test PRIVATE evl)
+
+# Install the real-time target
+install(TARGETS
+  xrf2test
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 ament_package()

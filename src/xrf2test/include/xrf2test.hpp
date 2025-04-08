@@ -4,7 +4,7 @@
 #include "XenoFrt20Sim.hpp"
 #include "LoopController.h"
 
-#pragma pack (1)    //https://carlosvin.github.io/langs/en/posts/cpp-pragma-pack/#_performance_test
+#pragma pack (1)    // https://carlosvin.github.io/langs/en/posts/cpp-pragma-pack/#_performance_test
 struct ThisIsAStruct
 {
     int this_is_a_int = 0;
@@ -12,8 +12,11 @@ struct ThisIsAStruct
     float this_is_a_float = 10.0;
     char this_is_a_char = 'R';
     bool this_is_a_bool = false;
-};
 
+    // 👇 Προσθήκη: logging των εντολών κινητήρων
+    double motor_left = 0.0;
+    double motor_right = 0.0;
+};
 #pragma pack(0)
 
 class xrf2test : public XenoFrt20Sim
@@ -28,8 +31,10 @@ private:
 
     double u[2];
     double y[2];
+    int xeno_fd;
+
 protected:
-    //Functions
+    // State machine methods
     int initialising() override;
     int initialised() override;
     int run() override;
@@ -39,8 +44,8 @@ protected:
     int paused() override;
     int error() override;
 
-    // current error
     int current_error = 0;
 };
 
 #endif // TEMPLATE20SIM_HPP
+
