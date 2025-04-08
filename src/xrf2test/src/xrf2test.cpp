@@ -60,6 +60,14 @@ int xrf2test::run()
     xrf2_msgs::msg::Ros2Xeno ros_data;
     int read_size = read(xeno_fd, &ros_data, sizeof(ros_data));
 
+    
+
+    if (read_size > 0) {
+        monitor.printf("Read %d bytes from xbuffer\n", read_size);
+        monitor.printf(" Received left_motor: %.4f\n", ros_data.left_motor);
+        monitor.printf("Received right_motor: %.4f\n", ros_data.right_motor);
+
+
    monitor.printf("right motor %.4f\n", ros_data.right_motor);
         // Καταγραφή και αποθήκευση input
         u[0] = ros_data.left_motor;
