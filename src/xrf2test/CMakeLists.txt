@@ -46,15 +46,9 @@ set(XENO
     ${locationXenoSrc}XenoFrt20Sim.cpp
 )
 
-<<<<<<< HEAD
+
 #Real-Time Executable
-=======
-<<<<<<< HEAD
-# 🔧 Real-Time Executable
-=======
-#Real-Time Executable
->>>>>>> 470dd26 (separeting_packages)
->>>>>>> a5ff0ad (Packages_Separated)
+
 add_executable(xrf2test 
     main.cpp
     ${XENO}
@@ -68,19 +62,13 @@ target_compile_definitions(xrf2test PRIVATE TIME_STEP_SIZE=${TIME_STEP_SIZE_VALU
 
 # Link dependencies to FRT executable
 ament_target_dependencies(xrf2test PUBLIC rclcpp xrf2_msgs std_msgs)
-<<<<<<< HEAD
 
-<<<<<<< HEAD
-=======
 # Install the ROS 2 test node
 install(TARGETS
   xrf2test
   DESTINATION lib/${PROJECT_NAME}
 )
-=======
->>>>>>> 470dd26 (separeting_packages)
 
->>>>>>> a5ff0ad (Packages_Separated)
 # Include paths for all headers
 target_include_directories(xrf2test BEFORE PUBLIC 
     /usr/evl/include 
@@ -94,15 +82,12 @@ target_include_directories(xrf2test BEFORE PUBLIC
 # Link Xenomai EVL user-space library
 target_link_directories(xrf2test PUBLIC /usr/evl/lib)
 target_link_libraries(xrf2test PRIVATE evl)
-<<<<<<< HEAD
-=======
 
 # Install the real-time target
 install(TARGETS
   xrf2test
   DESTINATION lib/${PROJECT_NAME}
 )
->>>>>>> 470dd26 (separeting_packages)
 
 # Install the real-time target
 install(TARGETS
