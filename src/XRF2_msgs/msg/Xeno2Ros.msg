@@ -1,2 +1,2 @@
-float64 feedback_left
-float64 feedback_right
+float32 feedback_left
+float32 feedback_right

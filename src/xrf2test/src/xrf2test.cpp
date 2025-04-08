@@ -14,15 +14,15 @@ xrf2test::xrf2test(uint write_decimator_freq, uint monitor_freq)
     printf("%s: Constructing xrf2test\n", __FUNCTION__);
 
     // Add variables to logger before logging starts
-    logger.addVariable("this_is_a_int", data_to_be_logged.this_is_a_int);
-    logger.addVariable("this_is_a_double", data_to_be_logged.this_is_a_double);
-    logger.addVariable("this_is_a_float", data_to_be_logged.this_is_a_float);
-    logger.addVariable("this_is_a_char", data_to_be_logged.this_is_a_char);
-    logger.addVariable("this_is_a_bool", data_to_be_logged.this_is_a_bool);
+    logger.addVariable("this_is_a_int", integer);
+    logger.addVariable("this_is_a_double", double_);
+    logger.addVariable("this_is_a_float", float_);
+    logger.addVariable("this_is_a_char", character);
+    logger.addVariable("this_is_a_bool", boolean);
 
     // Logging κινητήρων (ROS inputs)
-    logger.addVariable("motor_left", data_to_be_logged.motor_left);
-    logger.addVariable("motor_right", data_to_be_logged.motor_right);
+    logger.addVariable("motor_left", float_);
+    logger.addVariable("motor_right", float_);
 
     controller.SetFinishTime(0.0);  // Infinite run
 }

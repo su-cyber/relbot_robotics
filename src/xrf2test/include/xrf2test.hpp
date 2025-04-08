@@ -14,8 +14,8 @@ struct ThisIsAStruct
     bool this_is_a_bool = false;
 
     // 👇 Προσθήκη: logging των εντολών κινητήρων
-    double motor_left = 0.0;
-    double motor_right = 0.0;
+    float motor_left = 0.0;
+    float motor_right = 0.0;
 };
 #pragma pack(0)
 

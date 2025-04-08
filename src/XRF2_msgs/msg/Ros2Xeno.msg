@@ -1,2 +1,2 @@
-float64 left_motor
-float64 right_motor
+float32 left_motor
+float32 right_motor
