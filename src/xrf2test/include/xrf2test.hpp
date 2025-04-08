@@ -1,10 +1,10 @@
-#ifndef TEMPLATE20SIM_HPP
-#define TEMPLATE20SIM_HPP
+#ifndef XRF2TEST_HPP
+#define XRF2TEST_HPP
 
 #include "XenoFrt20Sim.hpp"
 #include "LoopController.h"
 
-#pragma pack (1)    // https://carlosvin.github.io/langs/en/posts/cpp-pragma-pack/#_performance_test
+#pragma pack(push, 1)
 struct ThisIsAStruct
 {
     int this_is_a_int = 0;
@@ -13,28 +13,29 @@ struct ThisIsAStruct
     char this_is_a_char = 'R';
     bool this_is_a_bool = false;
 
-    // 👇 Προσθήκη: logging των εντολών κινητήρων
-    float motor_left = 0.0;
-    float motor_right = 0.0;
+    // Motor inputs received from ROS
+    float motor_left = 0.0f;
+    float motor_right = 0.0f;
 };
-#pragma pack(0)
+#pragma pack(pop)
 
 class xrf2test : public XenoFrt20Sim
 {
 public:
     xrf2test(uint write_decimator_freq, uint monitor_freq);
     ~xrf2test();
+
 private:
     XenoFileHandler file;
-    struct ThisIsAStruct data_to_be_logged;
+    ThisIsAStruct data_to_be_logged;
     LoopController controller;
 
-    double u[2];
-    double y[2];
-    int xeno_fd;
+    double u[2]; // controller input (motor commands)
+    double y[2]; // controller output
+
+    int xeno_fd = -1; // xbuffer file descriptor
 
 protected:
-    // State machine methods
     int initialising() override;
     int initialised() override;
     int run() override;
@@ -47,4 +48,5 @@ protected:
     int current_error = 0;
 };
 
-#endif // TEMPLATE20SIM_HPP
+#endif // XRF2TEST_HPP
+
