@@ -7,8 +7,7 @@
 #include "xrf2_msgs/msg/ros2_xeno.hpp"
 
 xrf2test::xrf2test(uint write_decimator_freq, uint monitor_freq)
-: XenoFrt20Sim(write_decimator_freq, monitor_freq),
-  controller()
+: XenoFrt20Sim(write_decimator_freq, monitor_freq)
 {
     printf("%s: Constructing xrf2test\n", __FUNCTION__);
     controller.SetFinishTime(0.0);  // Infinite run
