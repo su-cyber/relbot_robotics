@@ -53,24 +53,20 @@ int xrf2test::initialised()
 
 int xrf2test::run()
 {
-    logger.start();
-    monitor.printf("Hello from run\n");
+    // logger.start();
+    evl_printf("Hello from run\n");
 
     // Ανάγνωση δεδομένων από ROS μέσω xbuffer
     xrf2_msgs::msg::Ros2Xeno ros_data;
     int read_size = read(xeno_fd, &ros_data, sizeof(ros_data));
 
-    if (read_size > 0) {
+   monitor.printf("right motor %.4f\n", ros_data.right_motor);
         // Καταγραφή και αποθήκευση input
         u[0] = ros_data.left_motor;
         u[1] = ros_data.right_motor;
 
-        data_to_be_logged.motor_left = ros_data.left_motor;
-        data_to_be_logged.motor_right = ros_data.right_motor;
-    } else {
-        monitor.printf("No ROS data received this cycle\n");
-    }
 
+   
     // Στατική τροποποίηση dummy δεδομένων
     data_to_be_logged.this_is_a_bool = !data_to_be_logged.this_is_a_bool;
     data_to_be_logged.this_is_a_int++;
