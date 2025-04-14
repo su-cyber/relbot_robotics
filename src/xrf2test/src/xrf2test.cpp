@@ -20,7 +20,7 @@ xrf2test::xrf2test(uint write_decimator_freq, uint monitor_freq)
     logger.addVariable("this_is_a_char", character);
     logger.addVariable("this_is_a_bool", boolean);
 
-    // Logging κινητήρων (ROS inputs)
+    // Logging ROS input commands
     logger.addVariable("motor_left", float_);
     logger.addVariable("motor_right", float_);
 
@@ -36,7 +36,7 @@ int xrf2test::initialising()
     logger.initialise();    // Only once
     ico_io.init();          // FPGA (if used)
 
-    // Άνοιγμα του Xenomai xbuffer (Ros → Xeno)
+    // Open Xenomai xbuffer (ROS → Xeno)
     xeno_fd = open("/dev/evl/xbuf/Ros-Xeno", O_RDWR);
     if (xeno_fd < 0) {
         evl_printf("Failed to open /dev/evl/xbuf/Ros-Xeno: %s\n", strerror(errno));
@@ -53,16 +53,25 @@ int xrf2test::initialised()
 
 int xrf2test::run()
 {
-    // logger.start();
     evl_printf("Hello from run\n");
 
-        monitor.printf("Received left_motor: %.4f\n", ros_msg.left_motor);
-        monitor.printf("Received right_motor: %.4f\n", ros_msg.right_motor);
+    monitor.printf("Received left_motor: %.4f\n", ros_msg.left_motor);
+    monitor.printf("Received right_motor: %.4f\n", ros_msg.right_motor);
 
-        u[0] = ros_msg.left_motor;
-        u[1] = ros_msg.right_motor;
-   
-    // Στατική τροποποίηση dummy δεδομένων
+    // Prepare input for controller
+    u[0] = ros_msg.left_motor;
+    u[1] = ros_msg.right_motor;
+    u[2] = 1.0;  // Typically enable signals or fixed inputs
+    u[3] = 1.0;
+
+    // Run the 20-sim model
+    controller.Calculate(u, y);
+
+    // Apply output to actuators
+    actuate_data.pwm1 = static_cast<int16_t>(y[1] * 2047.0);  // Right wheel
+    actuate_data.pwm2 = static_cast<int16_t>(-y[0] * 2047.0); // Left wheel (inverted)
+
+    // Dummy data updates for logger
     data_to_be_logged.this_is_a_bool = !data_to_be_logged.this_is_a_bool;
     data_to_be_logged.this_is_a_int++;
 
@@ -76,9 +85,7 @@ int xrf2test::run()
     data_to_be_logged.this_is_a_float /= 2;
     data_to_be_logged.this_is_a_double /= 4;
 
-    // Εκτέλεση ελέγχου
-    controller.Calculate(u, y);
-
+    // Exit FSM if controller finished (never in infinite mode)
     if (controller.IsFinished())
         return 1;
 

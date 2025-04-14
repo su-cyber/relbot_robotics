@@ -30,7 +30,7 @@ private:
     ThisIsAStruct data_to_be_logged;
     LoopController controller;
 
-    double u[2]; // controller input (motor commands)
+    double u[4]; // controller input (motor commands)
     double y[2]; // controller output
 
     int xeno_fd = -1; // xbuffer file descriptor
