@@ -10,7 +10,7 @@ public:
         : Node("moving_camera_tracker"), max_angle_(90.0) {
         // Subscribe to the camera feed
         image_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
-            "/output/moving_camera", 10,
+            "/flip_image", 10,
             std::bind(&MovingCameraTracker::image_callback, this, std::placeholders::_1)
         );
 

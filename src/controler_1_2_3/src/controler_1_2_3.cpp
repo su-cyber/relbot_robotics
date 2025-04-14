@@ -134,7 +134,7 @@ private:
   // Search behavior parameters (these are currently not used because we only command backward movement)
   int search_ticks_;
   int search_direction_;
-  const int max_search_ticks_ = 10
+  const int max_search_ticks_ = 10;
   const double search_speed_ = 2.0;       // previously set; now not used
   const double search_turn_speed_ = 1.0;     // previously set; now not used
 

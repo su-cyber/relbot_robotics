@@ -53,23 +53,23 @@ int xrf2test::initialised()
 
 int xrf2test::run()
 {
-    evl_printf("Hello from run\n");
 
     monitor.printf("Received left_motor: %.4f\n", ros_msg.left_motor);
     monitor.printf("Received right_motor: %.4f\n", ros_msg.right_motor);
 
     // Prepare input for controller
-    u[0] = ros_msg.left_motor;
-    u[1] = ros_msg.right_motor;
-    u[2] = 1.0;  // Typically enable signals or fixed inputs
-    u[3] = 1.0;
+    u[0] = 0;
+    u[1] = 0;
+    u[2] = ros_msg.left_motor;  // Typically enable signals or fixed inputs
+    u[3] = ros_msg.right_motor;
 
     // Run the 20-sim model
     controller.Calculate(u, y);
 
     // Apply output to actuators
-    actuate_data.pwm1 = static_cast<int16_t>(y[1] * 2047.0);  // Right wheel
-    actuate_data.pwm2 = static_cast<int16_t>(-y[0] * 2047.0); // Left wheel (inverted)
+    actuate_data.pwm1 = static_cast<int16_t>(-y[1]);  // Right wheel
+    actuate_data.pwm2 = static_cast<int16_t>(y[0]); // Left wheel (inverted)
+
 
     // Dummy data updates for logger
     data_to_be_logged.this_is_a_bool = !data_to_be_logged.this_is_a_bool;
