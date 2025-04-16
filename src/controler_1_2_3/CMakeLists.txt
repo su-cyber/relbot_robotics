@@ -12,6 +12,7 @@ find_package(std_msgs REQUIRED)
 find_package(example_interfaces REQUIRED)
 find_package(sensor_msgs REQUIRED)  # For Image message
 find_package(cv_bridge REQUIRED)    # For OpenCV bridge
+find_package(xrf2_msgs REQUIRED)
 
 include_directories(include)
 
@@ -22,7 +23,8 @@ ament_target_dependencies(controler_1_2_3_node
   std_msgs 
   example_interfaces 
   sensor_msgs 
-  cv_bridge  # Add cv_bridge here
+  cv_bridge
+  xrf2_msgs
 )
 
 install(TARGETS controler_1_2_3_node

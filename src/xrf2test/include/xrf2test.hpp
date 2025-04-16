@@ -16,8 +16,19 @@ struct ThisIsAStruct
     // Motor inputs received from ROS
     float motor_left = 0.0f;
     float motor_right = 0.0f;
+
+    // ew variables for 3.2 logging
+    double pos_left_rad = 0.0;
+    double pos_right_rad = 0.0;
+    int delta_left = 0;
+    int delta_right = 0;
+    int pwm_left = 0;
+    int pwm_right = 0;
+    double accumulated_pos_left = 0.0;
+    double accumulated_pos_right = 0.0;
 };
 #pragma pack(pop)
+
 
 class xrf2test : public XenoFrt20Sim
 {

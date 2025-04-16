@@ -20,8 +20,8 @@ private:
   void timer_callback()
   {
     auto msg = xrf2_msgs::msg::Ros2Xeno();
-    msg.left_motor = 0.3;
-    msg.right_motor = 0.3;
+    msg.left_motor = 5.0;
+    msg.right_motor = 5.0;
 
     publisher_->publish(msg);
     RCLCPP_INFO(this->get_logger(), "Sent command: L=%.2f, R=%.2f", msg.left_motor, msg.right_motor);
