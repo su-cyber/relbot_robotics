@@ -1,7 +1,6 @@
 #include "rclcpp/rclcpp.hpp"
 #include "geometry_msgs/msg/point.hpp"
 #include "example_interfaces/msg/float64.hpp"
-#include "xrf2_msgs/msg/ros2_xeno.hpp"
 #include <algorithm>
 
 class RelbotMotorController : public rclcpp::Node
@@ -25,7 +24,10 @@ public:
       "/tracked_object_position", 10,
       std::bind(&RelbotMotorController::object_callback, this, std::placeholders::_1));
 
-      publisher_ = this->create_publisher<xrf2_msgs::msg::Ros2Xeno>("Ros2Xeno", 10);
+    left_motor_pub_ = this->create_publisher<example_interfaces::msg::Float64>(
+      "/input/left_motor/setpoint_vel", 10);
+    right_motor_pub_ = this->create_publisher<example_interfaces::msg::Float64>(
+      "/input/right_motor/setpoint_vel", 10);
 
     timer_ = this->create_wall_timer(
       std::chrono::milliseconds(50),
@@ -108,16 +110,18 @@ private:
   // Publish the motor commands to the respective topics
   void publish_motors(double left, double right)
   {
-    auto msg = xrf2_msgs::msg::Ros2Xeno();
-    msg.left_motor = left;
-    msg.right_motor = right;
-
-    publisher_->publish(msg);
+    example_interfaces::msg::Float64 left_msg;
+    example_interfaces::msg::Float64 right_msg;
+    left_msg.data = left;
+    right_msg.data = right;
+    left_motor_pub_->publish(left_msg);
+    right_motor_pub_->publish(right_msg);
   }
 
   // ROS interfaces
   rclcpp::Subscription<geometry_msgs::msg::Point>::SharedPtr object_sub_;
-  rclcpp::Publisher<xrf2_msgs::msg::Ros2Xeno>::SharedPtr publisher_;
+  rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr left_motor_pub_;
+  rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr right_motor_pub_;
   rclcpp::TimerBase::SharedPtr timer_;
 
   // Control parameters (order matters: declared in the same order as in the initializer list)

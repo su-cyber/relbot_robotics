@@ -1,2 +1,0 @@
-this_is_a_int,this_is_a_double,this_is_a_float,this_is_a_char,this_is_a_bool,motor_left,motor_right,pos_left_rad,pos_right_rad,delta_left,delta_right,pwm_left,pwm_right
-3,5,4,2,1,4,4,5,5,3,3,3,3
