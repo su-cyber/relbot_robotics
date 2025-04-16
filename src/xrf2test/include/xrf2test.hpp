@@ -35,6 +35,12 @@ private:
 
     int xeno_fd = -1; // xbuffer file descriptor
 
+    // Variables to be logged
+    double pos_left_rad = 0.0;
+    double pos_right_rad = 0.0;
+    int delta_left = 0;
+    int delta_right = 0;
+
 protected:
     int initialising() override;
     int initialised() override;
@@ -49,4 +55,3 @@ protected:
 };
 
 #endif // XRF2TEST_HPP
-
